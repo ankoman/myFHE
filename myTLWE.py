@@ -76,7 +76,7 @@ class TLWE:
     p_ = 0
 
     @classmethod
-    def init(cls, n, sigma, p):
+    def init(cls, n: int, sigma: float, p: int):
         cls.n = n
         cls.sigma = sigma
         cls.p = p
@@ -87,7 +87,7 @@ class TLWE:
         self.value = value
 
     def __add__(self, x: TLWE) -> TLWE:
-        return TLWE([self.value[0] + x.value[0], self.value[1] + x.value[1]])
+        return TLWE(self.value + x.value)
 
     def __repr__(self) -> str:
         return "TLWE({})".format(self.value)
@@ -115,11 +115,11 @@ class TLWE:
         a_ = np.array([random.randint(0, (2**mu.q) - 1) for i in range(TLWE.n)])
         e = round(random.normalvariate(0, TLWE.sigma) * 2**Torus.q)
         b = np.dot(a_, s_) + mu.value + e
-        return TLWE([a_, b])
+        return TLWE(np.array(np.append(a_, b)))
 
     @staticmethod
     def dec(c, s_) -> Torus:
-        mu = c.value[1] - np.dot(c.value[0], s_)
+        mu = c.value[-1] - np.dot(c.value[:TLWE.n], s_)
 
         ### round
         mask = 2**(Torus.q - TLWE.p) - 1
@@ -165,13 +165,13 @@ def main():
 
     ###Enc
     c1 = TLWE.enc(mu1, sk)
-    print(c1)
+    print(f"c1: {c1}")
     c2 = TLWE.enc(mu2, sk)
-    print(c2)
+    print(f"c2: {c2}")
 
     ###Add
     c3 = c1 + c2
-    print(c3)
+    print(f"c3: {c3}")
     
     ###Dec
     MU = TLWE.dec(c3, sk)
