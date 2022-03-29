@@ -24,7 +24,7 @@ l = 3
 
 
 
-class TestTLWE(unittest.TestCase):
+class TestTGSW(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:

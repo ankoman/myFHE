@@ -80,6 +80,7 @@ class TGSW:
             elem += 2**(Torus.q - TGSW.l*TGSW.Bbit - 1)
             elem = int(elem)
             for i in range(TGSW.l):
+                ### Unsigned representation
                 list_Ginv.append(elem >> (Torus.q - TGSW.Bbit*(i+1)) & (TGSW.B - 1))
 
         return np.array(list_Ginv)

@@ -54,7 +54,7 @@ class Torus:
 
     def __sub__(self, x: TLWE) -> TLWE:
         return TLWE(self.value - x.value)
-        
+
     def __eq__(self, x):
         return self.value == x.value
     
@@ -87,7 +87,6 @@ class TLWE:
         cls.sigma = sigma
         cls.p = p
         cls.p_ = 1 / (2**cls.p)
-
 
     def __init__(self, value: List = None) -> TLWE:
         self.value = value
@@ -130,20 +129,13 @@ class TLWE:
         return TLWE(np.array(np.append(a_, b)))
 
     @staticmethod
-    def dec(c, s_) -> Torus:
+    def dec(c: TLWE, s_: "binary array") -> Torus:
         mu = c.value[-1] - np.dot(c.value[:TLWE.n], s_)
-
         ### round
-        mask = 2**(Torus.q - TLWE.p) - 1
-        distance_to_0 = mu & mask
-        distance_to_1 = (mask + 1) - distance_to_0
+        mu = mu + (1 << (Torus.q - TLWE.p - 1))
         mu = mu >> (Torus.q - TLWE.p)
-        if distance_to_1 < distance_to_0:
-            mu += 1
         mu = int(mu << (Torus.q - TLWE.p))
 
-        #mu = int(round(mu*2**TLWE.p)) % (2**TLWE.p)
-        #mu = mu // (2**TLWE.p)
         return Torus(mu)
 
 def main():
