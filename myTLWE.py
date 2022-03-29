@@ -61,6 +61,9 @@ class Torus:
     def __str__(self) -> str:
         return self.__repr__()
 
+    def toInt(self) -> int:
+        return self.value >> (Torus.q - TLWE.p)
+        
 class TLWE:
     """
     Torus LWE
@@ -97,7 +100,10 @@ class TLWE:
 
     @staticmethod
     def rand_element() -> "TLWE":
-        pass
+        sk = TLWE.keyGen()
+        mu = TLWE.rand_plaintext()
+        c = TLWE.enc(mu, sk)
+        return c
 
     @staticmethod
     def rand_plaintext() -> Torus:
