@@ -52,6 +52,9 @@ class Torus:
     def __add__(self, x: Torus) -> Torus:
         return Torus(self.value + x.value)
 
+    def __sub__(self, x: TLWE) -> TLWE:
+        return TLWE(self.value - x.value)
+        
     def __eq__(self, x):
         return self.value == x.value
     
@@ -63,7 +66,7 @@ class Torus:
 
     def toInt(self) -> int:
         return self.value >> (Torus.q - TLWE.p)
-        
+
 class TLWE:
     """
     Torus LWE
@@ -91,6 +94,9 @@ class TLWE:
 
     def __add__(self, x: TLWE) -> TLWE:
         return TLWE(self.value + x.value)
+    
+    def __sub__(self, x: TLWE) -> TLWE:
+        return TLWE(self.value - x.value)
 
     def __repr__(self) -> str:
         return "TLWE({})".format(self.value)
