@@ -10,6 +10,7 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from __future__ import annotations
+from multiprocessing.sharedctypes import Value
 import random
 import numpy as np
 from myTLWE import Torus
@@ -20,12 +21,54 @@ from myTLWE import Torus
 # Q = 32
 # P = 16
 
+class IntRing():
+    """
+    Integer Ring
+    Components ordering are:
+    [0] = 1, [1] = X, [2] = X^2, ..., [N-1] = X^(N-1)
+    """
+    N = 0
+
+    @classmethod
+    def init(cls, N: int):
+        cls.N = N
+
+    def __init__(self, value: List = None) -> IntRing:
+        self.value = value
+
+    def __add__(self, rhs: IntRing) -> IntRing:
+        return IntRing(self.value + rhs.value)
+
+    def __sub__(self, rhs: IntRing) -> IntRing:
+        return IntRing(self.value - rhs.value)
+
+    def __repr__(self) -> str:
+        return f"IntRing({self.value})"
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def __len__(self) -> int:
+        return len(self.value)
+
+    def __iter__(self):
+        return iter(self.value)
+
+    def __eq__(self, x):
+        return np.all(self.value == x.value)
+
+    @staticmethod
+    def rand_element(coeff_max) -> IntRing:
+        return IntRing(np.array([random.randint(0, coeff_max) for i in range(IntRing.N)]))
+
 
 class TorusRing:
     """
     T_N[X]: Polenomial ring over the Torus.
     T_N[X] = T[X]/(X^N+1)
     X^N+1 is the M-(2N)th cyclotomic polynomial.
+    Components ordering are:
+    [0] = 1, [1] = X, [2] = X^2, ..., [N-1] = X^(N-1)
     """
     N = 0
 
@@ -55,8 +98,14 @@ class TorusRing:
         return len(self.value)
 
     def __eq__(self, x):
-        #print(self.value == x.value)
         return np.all(self.value == x.value)
+
+    def toInt(self) -> "integer array":
+        return np.array([elem >> (Torus.q - TRLWE.p) for elem in self.value])
+
+    @staticmethod
+    def getZeroPolynomial():
+        return TorusRing(np.array([0 for i in range(TorusRing.N)]))
 
     @staticmethod
     def round(tr: TorusRing):
@@ -74,7 +123,7 @@ class TorusRing:
         return TorusRing(np.array([random.randint(0, (2**TRLWE.p) - 1) << (Torus.q - TRLWE.p) for i in range(TorusRing.N)]))
 
     @staticmethod
-    def ext_product(A: TorusRing, B: "Z_N[X] polynomial"):
+    def ext_product(A: TorusRing, B: IntRing):
         """
         External product of the two N-1 degree polynomials.
         Components ordering are:
@@ -116,6 +165,7 @@ class TRLWE:
     @classmethod
     def init(cls, N: int, sigma: float, p: int):
         TorusRing.init(N)
+        IntRing.init(N)
         cls.N = N
         cls.sigma = sigma
         cls.p = p
@@ -142,25 +192,25 @@ class TRLWE:
         return TorusRing.rand_element()
 
     @staticmethod
-    def keyGen() -> "N-1 degree binary polynomial":
-        return np.array([0 if random.random() < 0.5 else 1 for i in range(TRLWE.N)])
+    def keyGen() -> IntRing:
+        return IntRing.rand_element(1)
 
     @staticmethod
-    def enc(mu: TorusRing, s: "binary polynomial"):
+    def enc(mu: TorusRing, s: IntRing):
         a = TorusRing.rand_element()    # k = 1
         e = np.array([round(random.normalvariate(0, TRLWE.sigma) * 2**Torus.q) for i in range(TRLWE.N)])
         b = TorusRing.ext_product(a, s) + mu + TorusRing(e)
         return TRLWE(np.array(np.append(a, b)))
 
     @staticmethod
-    def dec(c: TRLWE, s: "binary polynomial"):
+    def dec(c: TRLWE, s: IntRing):
         mu = c.value[1] - TorusRing.ext_product(c.value[0], s) # k = 1
         return TorusRing.round(mu)
 
 
 def main():
 
-    N = 2
+    N = 16
     S = 2**-15
     Q = 6
     P = 1
