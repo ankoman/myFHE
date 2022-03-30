@@ -90,7 +90,7 @@ class TGSW:
         Z = np.array([TLWE.enc(Torus(0), s_).value for i in range((TLWE.n+1) * TGSW.l)]).reshape((TLWE.n + 1) * TGSW.l, TLWE.n+1)
         ### Make gadget matrix
         GT = TGSW.getGTmatrix()
-        return Z + (m << Torus.q)*GT
+        return Z + m*GT
 
     @staticmethod
     def dec(c, s_) -> Torus:
@@ -103,7 +103,7 @@ class TGSW:
         ### Reduction for fixed-point number
         list_red = []
         for elem in prod:
-            list_red.append(elem >> Torus.q)
+            list_red.append(elem)
         return TLWE(list_red)
 
     @staticmethod

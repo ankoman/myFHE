@@ -11,14 +11,13 @@
 #-------------------------------------------------------------------------------
 import unittest
 import sys
-from myTLWE import Torus
-from myTLWE import TLWE
+from myTLWE import Torus, TLWE
 from myTGSW import TGSW
 
 LOOP = 10000
 N = 32
 S = 2**-15
-P = 6
+P = 3
 B = 64
 l = 3
 
