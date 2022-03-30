@@ -41,6 +41,38 @@ class IntRing():
 
     def __sub__(self, rhs: IntRing) -> IntRing:
         return IntRing(self.value - rhs.value)
+    
+    def __mul__(self, rhs) -> IntRing:
+        if type(rhs) == int or type(rhs) == np.int64:
+            return IntRing(np.array([coeff * rhs for coeff in self.value]))
+        elif type(rhs) == np.ndarray:
+            return IntRing(self.value*rhs)
+        elif type(rhs) == TorusRing:
+            return TorusRing.ext_product(rhs, self.value)
+        else:
+            print(type(rhs))
+            raise Exception("IntRing mul type exception")
+
+    def __matmul__(self, rhs) -> "IntRing array":
+        list_ans = []
+        for row in rhs:
+            list_row = []
+            for elem in row:
+                list_row.append(self*elem)
+            list_ans.append(list_row)
+        return np.array(list_ans)
+
+    def __lshift__(self, rhs) -> IntRing:
+        if type(rhs) == int:
+            return IntRing(np.array([coeff << rhs for coeff in self.value]))
+        else:
+            raise Exception("IntRing lshift type exception")
+
+    def __rshift__(self, rhs) -> IntRing:
+        if type(rhs) == int:
+            return IntRing(np.array([coeff >> rhs for coeff in self.value]))
+        else:
+            raise Exception("IntRing rshift type exception")
 
     def __repr__(self) -> str:
         return f"IntRing({self.value})"
@@ -61,6 +93,15 @@ class IntRing():
     def rand_element(coeff_max) -> IntRing:
         return IntRing(np.array([random.randint(0, coeff_max) for i in range(IntRing.N)]))
 
+    @staticmethod
+    def getZero():
+        return IntRing(np.array([0 for i in range(IntRing.N)]))
+
+    @staticmethod
+    def getOne():
+        one = np.array([0 for i in range(IntRing.N)])
+        one[0] = 1
+        return IntRing(one)
 
 class TorusRing:
     """
@@ -88,6 +129,12 @@ class TorusRing:
     def __sub__(self, rhs: TorusRing) -> TorusRing:
         return TorusRing(self.value - rhs.value)
 
+    def __rshift__(self, rhs) -> TorusRing:
+        if type(rhs) == int:
+            return TorusRing(np.array([coeff >> rhs for coeff in self.value]))
+        else:
+            raise Exception("IntRing rshift type exception")
+
     def __repr__(self) -> str:
         return f"TorusRing({self.value})"
 
@@ -104,8 +151,12 @@ class TorusRing:
         return np.array([elem >> (Torus.q - TRLWE.p) for elem in self.value])
 
     @staticmethod
-    def getZeroPolynomial():
+    def getZero():
         return TorusRing(np.array([0 for i in range(TorusRing.N)]))
+
+    @staticmethod
+    def getOne():
+        return TorusRing(np.array([0 for i in range(TorusRing.N - 1)].insert(0, 1)))
 
     @staticmethod
     def round(tr: TorusRing):
@@ -182,6 +233,9 @@ class TRLWE:
 
     def __add__(self, rhs: TorusRing) -> TRLWE:
         return TRLWE(self.value + rhs.value)
+
+    def __sub__(self, rhs: TorusRing) -> TRLWE:
+        return TRLWE(self.value - rhs.value)
 
     @staticmethod
     def rand_element(self) -> TRLWE:
