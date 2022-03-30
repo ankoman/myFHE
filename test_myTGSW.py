@@ -37,7 +37,7 @@ class TestTGSW(unittest.TestCase):
             m = TLWE.rand_plaintext()
             c = TLWE.enc(m, sk)
             ### Flatten
-            Ginv = TGSW.Ginv(c.value)
+            Ginv = TGSW.Ginv(c)
             G = TGSW.getGTmatrix()
             flatten = Ginv @ G
             res = TLWE.dec(TLWE(flatten), sk)

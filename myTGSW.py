@@ -10,7 +10,7 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from __future__ import annotations
-from myTLWE import N, Torus
+from myTLWE import Torus
 from myTLWE import TLWE
 import random
 import numpy as np
@@ -40,7 +40,7 @@ class TGSW:
     def __init__(self, value: List = None) -> TGSW:
         self.value = value
 
-    def __add__(self, x: TLWE) -> TGSW:
+    def __add__(self, x: TGSW) -> TGSW:
         pass
 
     def __repr__(self) -> str:
@@ -76,7 +76,7 @@ class TGSW:
     @staticmethod
     def Ginv(tlwe: TLWE):
         list_Ginv = []
-        for elem in tlwe:
+        for elem in tlwe.value:
             elem += 2**(Torus.q - TGSW.l*TGSW.Bbit - 1)
             elem = int(elem)
             for i in range(TGSW.l):
@@ -98,7 +98,7 @@ class TGSW:
     
     @staticmethod
     def externalProduct(tlwe: TLWE, tgsw: TGSW) -> TLWE:
-        Ginv = TGSW.Ginv(tlwe.value)
+        Ginv = TGSW.Ginv(tlwe)
         prod = Ginv @ tgsw
         ### Reduction for fixed-point number
         list_red = []
@@ -139,7 +139,7 @@ def main():
     c = TLWE.enc(m, sk)
     #print(f"TLWE: {c}")
 
-    Ginv = TGSW.Ginv(c.value)
+    Ginv = TGSW.Ginv(c)
     G = TGSW.getGTmatrix()
 
     a = Ginv @ G
