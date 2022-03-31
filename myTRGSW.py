@@ -112,8 +112,21 @@ class TRGSW:
         return TRGSW(Z + m@GT)
 
     @staticmethod
-    def dec(c, s_):
-        pass
+    def dec(c: TRGSW, s_: IntRing):
+        """
+        Plaintext space p must be less than B.
+        """
+        mp = TRLWE.dec_wo_round(TRLWE(c.value[-TRGSW.l]), s_)
+
+        ### Round
+        list_t = []
+        for val in mp.value:
+            ## Rounding
+            temp = val + (1 << (Torus.q - TRGSW.Bbit - 1))
+            temp = temp << TRGSW.Bbit >> Torus.q
+            list_t.append(temp & (2**TRLWE.p - 1))
+
+        return IntRing(list_t)
 
     @staticmethod
     def externalProduct(trlwe: TRLWE, trgsw: TRGSW) -> TRLWE:
@@ -222,6 +235,19 @@ def main():
     else:
         print("NG")
 
+    ### Dec test
+    m1 = TRGSW.rand_plaintext()
+    print(f"m1: {m1}")
+    c1 = TRGSW.enc(m1, sk)
+    print(f"c1: {c1}")
+
+    mp = TRGSW.dec(c1, sk)
+    print(f"m': {mp}")
+
+    if mp == m1:
+        print("OK\n")
+    else:
+        print("NG\n")
 
 if __name__ == '__main__':
     main()

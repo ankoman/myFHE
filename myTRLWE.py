@@ -10,10 +10,9 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from __future__ import annotations
-from multiprocessing.sharedctypes import Value
 import random
 import numpy as np
-from myTLWE import Torus
+from myTLWE import TLWE, Torus
 
 ### For 128-bit security
 # N = 635
@@ -52,6 +51,16 @@ class IntRing():
         else:
             print(type(rhs))
             raise Exception("IntRing mul type exception")
+
+    def __pow__(self, rhs) -> TorusRing:
+        t = self
+        if type(rhs) == int:
+            for i in range(rhs - 1):
+                t = TorusRing.ext_product(t, self.value)
+            return t
+        else:
+            print(type(rhs))
+            raise Exception("IntRing pow type exception")
 
     def __matmul__(self, rhs) -> "IntRing array":
         list_ans = []
@@ -129,6 +138,23 @@ class TorusRing:
     def __sub__(self, rhs: TorusRing) -> TorusRing:
         return TorusRing(self.value - rhs.value)
 
+    def __mul__(self, rhs) -> TorusRing:
+        if type(rhs) == TorusRing:
+            return TorusRing.ext_product(rhs, self.value)
+        else:
+            print(type(rhs))
+            raise Exception("TorusRing pow type exception")
+
+    def __pow__(self, rhs) -> TorusRing:
+        t = self
+        if type(rhs) == int:
+            for i in range(rhs - 1):
+                t = TorusRing.ext_product(t, self.value)
+            return t
+        else:
+            print(type(rhs))
+            raise Exception("TorusRing mul type exception")
+
     def __rshift__(self, rhs) -> TorusRing:
         if type(rhs) == int:
             return TorusRing(np.array([coeff >> rhs for coeff in self.value]))
@@ -148,7 +174,7 @@ class TorusRing:
         return np.all(self.value == x.value)
 
     def toInt(self) -> "integer array":
-        return np.array([elem >> (Torus.q - TRLWE.p) for elem in self.value])
+        return np.array([elem >> (Torus.q - TRLWE.p) for elem in TorusRing.round(self).value])
 
     @staticmethod
     def getZero():
@@ -250,22 +276,29 @@ class TRLWE:
         return IntRing.rand_element(1)
 
     @staticmethod
-    def enc(mu: TorusRing, s: IntRing):
-        a = TorusRing.rand_element()    # k = 1
-        e = np.array([round(random.normalvariate(0, TRLWE.sigma) * 2**Torus.q) for i in range(TRLWE.N)])
+    def enc(mu: TorusRing, s: IntRing, explicit: bool = False):
+        if explicit:
+            a = TorusRing.getZero()
+            e = np.array([0 for i in range(TRLWE.N)])
+        else:
+            a = TorusRing.rand_element()    # k = 1
+            e = np.array([round(random.normalvariate(0, TRLWE.sigma) * 2**Torus.q) for i in range(TRLWE.N)])
         b = TorusRing.ext_product(a, s) + mu + TorusRing(e)
         return TRLWE(np.array(np.append(a, b)))
 
     @staticmethod
     def dec(c: TRLWE, s: IntRing):
-        mu = c.value[1] - TorusRing.ext_product(c.value[0], s) # k = 1
-        return TorusRing.round(mu)
+        return TorusRing.round(TRLWE.dec_wo_round(c, s))
 
+    @staticmethod
+    def dec_wo_round(c: TRLWE, s: IntRing):
+        mu = c.value[1] - TorusRing.ext_product(c.value[0], s)  # k = 1
+        return mu
 
 def main():
 
     N = 16
-    S = 2**-15
+    S = 2**-25
     Q = 6
     P = 1
 
@@ -308,9 +341,28 @@ def main():
     print(f"mu3: {mu3}")
 
     if (mu1 + mu2) == mu3:
-        print("OK")
+        print("OK\n")
     else:
-        print("NG")
+        print("NG\n")
+
+
+    # ### Test rotate
+    # from myTRGSW import TRGSW
+    # TRGSW.init(N, S, P, 64, 3)
+    # sk = TRLWE.keyGen()
+    # print(f"sk: {sk}")
+    # tv = TorusRing([i for i in range(TorusRing.N)])
+    # tv = TRLWE.enc(tv, sk, True)
+    # print(f"tv: {tv}")
+
+    # X = [0 for i in range(TorusRing.N - 1)]
+    # X.insert(1, 1)
+    # X = IntRing(X)
+    # X = TRGSW.enc(X, sk)
+    # print(f"X: {X}")
+
+    # print(tv*X**32)
+
 
 
 if __name__ == '__main__':

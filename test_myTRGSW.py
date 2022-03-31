@@ -15,9 +15,9 @@ from myTRLWE import Torus, TRLWE
 from myTRGSW import TRGSW
 
 LOOP = 10000
-N = 32
+N = 4
 S = 2**-25
-P = 8
+P = 6
 B = 64
 l = 3
 
@@ -72,6 +72,18 @@ class TestTGSW(unittest.TestCase):
 
         print(f"PASS: {LOOP} {sys._getframe().f_code.co_name}")
 
+    def test_Dec(self):
+        """
+        Plaintext space p must be less than B.
+        """
+        for i in range(LOOP):
+            sk = TRLWE.keyGen()
+            m = TRGSW.rand_plaintext()
+            c = TRGSW.enc(m, sk)
+            mp = TRGSW.dec(c, sk)
+            self.assertEqual(m, mp)
+
+        print(f"PASS: {LOOP} {sys._getframe().f_code.co_name}")
 
 if __name__ == '__main__':
     unittest.main()

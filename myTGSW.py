@@ -97,8 +97,6 @@ class TGSW:
         """
         Plaintext space p must be less than B.
         """
-        sum = np.sum(c.value[(-TGSW.l):], axis=0)
-        
         mp = TLWE.dec_wo_round(TLWE(c.value[-TGSW.l]), s_)
         mp = mp.value + (1 << (Torus.q - TGSW.Bbit - 1))
         return ((mp << (TGSW.Bbit)) >> Torus.q) & (2**TLWE.p - 1)
