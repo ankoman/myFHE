@@ -22,7 +22,6 @@ import numpy as np
 ### For test
 N = 16
 S = 2**-15
-Q = 6
 P = 13
 
 class Torus:
@@ -55,6 +54,9 @@ class Torus:
     def __sub__(self, x: TLWE) -> TLWE:
         return TLWE(self.value - x.value)
 
+    def __rmul__(self, x: TLWE) -> TLWE:
+        return Torus(self.value * x)
+
     def __eq__(self, x):
         return self.value == x.value
     
@@ -65,7 +67,15 @@ class Torus:
         return self.__repr__()
 
     def toInt(self) -> int:
-        return self.value >> (Torus.q - TLWE.p)
+        return Torus.round(self).value >> (Torus.q - TLWE.p)
+
+    @staticmethod
+    def round(tr: Torus):
+        ## Rounding
+        temp = tr.value + (1 << (Torus.q - TLWE.p - 1))
+        temp = temp >> (Torus.q - TLWE.p)
+        temp = int(temp << (Torus.q - TLWE.p))
+        return Torus(temp)
 
 class TLWE:
     """
@@ -93,7 +103,7 @@ class TLWE:
 
     def __add__(self, x: TLWE) -> TLWE:
         return TLWE(self.value + x.value)
-    
+
     def __sub__(self, x: TLWE) -> TLWE:
         return TLWE(self.value - x.value)
 
@@ -130,11 +140,18 @@ class TLWE:
 
     @staticmethod
     def dec(c: TLWE, s_: "binary array") -> Torus:
-        mu = c.value[-1] - np.dot(c.value[:TLWE.n], s_)
+        mu = TLWE.dec_wo_round(c, s_).value 
+
         ### round
         mu = mu + (1 << (Torus.q - TLWE.p - 1))
         mu = mu >> (Torus.q - TLWE.p)
         mu = int(mu << (Torus.q - TLWE.p))
+
+        return Torus(mu)
+
+    @staticmethod
+    def dec_wo_round(c: TLWE, s_: "binary array") -> Torus:
+        mu = c.value[-1] - np.dot(c.value[:TLWE.n], s_)
 
         return Torus(mu)
 

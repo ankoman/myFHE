@@ -55,7 +55,7 @@ class TGSW:
 
     @staticmethod
     def rand_plaintext() -> int:
-        return random.randint(0, TLWE.p**2 - 1)
+        return random.randint(0, 2**TLWE.p - 1)
 
     @staticmethod
     def keyGen() -> "n-dimension binary array":
@@ -90,16 +90,23 @@ class TGSW:
         Z = np.array([TLWE.enc(Torus(0), s_).value for i in range((TLWE.n+1) * TGSW.l)]).reshape((TLWE.n + 1) * TGSW.l, TLWE.n+1)
         ### Make gadget matrix
         GT = TGSW.getGTmatrix()
-        return Z + m*GT
+        return TGSW(Z + m*GT)
 
     @staticmethod
-    def dec(c, s_) -> Torus:
-        pass
+    def dec(c, s_) -> int:
+        """
+        Plaintext space p must be less than B.
+        """
+        sum = np.sum(c.value[(-TGSW.l):], axis=0)
+        
+        mp = TLWE.dec_wo_round(TLWE(c.value[-TGSW.l]), s_)
+        mp = mp.value + (1 << (Torus.q - TGSW.Bbit - 1))
+        return ((mp << (TGSW.Bbit)) >> Torus.q) & (2**TLWE.p - 1)
     
     @staticmethod
     def externalProduct(tlwe: TLWE, tgsw: TGSW) -> TLWE:
         Ginv = TGSW.Ginv(tlwe)
-        prod = Ginv @ tgsw
+        prod = Ginv @ tgsw.value
         ### Reduction for fixed-point number
         list_red = []
         for elem in prod:
@@ -126,14 +133,14 @@ def main():
     ### For test
     N = 2
     S = 2**-15
-    P = 6
+    P = 2
     B = 64
     l = 3
 
     ### Flatten test
     TGSW.init(N, S, P, B, l)
     sk = TLWE.keyGen()
-    #print(f"sk: {sk}")
+    print(f"sk: {sk}")
     m = TLWE.rand_plaintext()
     print(f"m: {m} ({m.toInt()})")
     c = TLWE.enc(m, sk)
@@ -149,9 +156,9 @@ def main():
     print(f"m': {mp} ({mp.toInt()})")
 
     if mp == m:
-        print("OK")
+        print("OK\n")
     else:
-        print("NG")
+        print("NG\n")
 
     ### multiplicative homomorhic test
     m1 = TLWE.rand_plaintext()
@@ -170,9 +177,9 @@ def main():
     print(f"m3: {m3} ({m3.toInt()})")
 
     if m3 == Torus(m1.value*m2):
-        print("OK")
+        print("OK\n")
     else:
-        print("NG")
+        print("NG\n")
 
     ### CMUX test
     m1 = TLWE.rand_plaintext()
@@ -196,9 +203,23 @@ def main():
     print(f"selected: {selected.toInt()}")
 
     if sel*(m2.value - m1.value) + m1.value == selected.value:
-        print("OK")
+        print("OK\n")
     else:
-        print("NG")
+        print("NG\n")
+
+    ### Dec test
+    m1 = TGSW.rand_plaintext()
+    print(f"m1: {m1}")
+    c1 = TGSW.enc(m1, sk)
+    print(f"c1: {c1}")
+
+    mp = TGSW.dec(c1, sk)
+    print(f"m': {mp}")
+
+    if mp == m1:
+        print("OK\n")
+    else:
+        print("NG\n")
 
 if __name__ == '__main__':
     main()

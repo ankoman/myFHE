@@ -15,12 +15,11 @@ from myTLWE import Torus, TLWE
 from myTGSW import TGSW
 
 LOOP = 10000
-N = 32
+N = 4
 S = 2**-15
-P = 3
+P = 4
 B = 64
 l = 3
-
 
 
 class TestTGSW(unittest.TestCase):
@@ -60,19 +59,33 @@ class TestTGSW(unittest.TestCase):
         print(f"PASS: {LOOP} {sys._getframe().f_code.co_name}")
 
     def test_CMUX(self):
-        sk = TLWE.keyGen()
-        m1 = TLWE.rand_plaintext()
-        m2 = TLWE.rand_plaintext()
-        c1 = TLWE.enc(m1, sk)
-        c2 = TLWE.enc(m2, sk)
-        sel = TGSW.rand_plaintext() % 2
-        c_sel = TGSW.enc(sel, sk)
+        for i in range(LOOP):
+            sk = TLWE.keyGen()
+            m1 = TLWE.rand_plaintext()
+            m2 = TLWE.rand_plaintext()
+            c1 = TLWE.enc(m1, sk)
+            c2 = TLWE.enc(m2, sk)
+            sel = TGSW.rand_plaintext() % 2
+            c_sel = TGSW.enc(sel, sk)
 
-        res = TGSW.CMUX(c_sel, c1, c2)
-        selected = TLWE.dec(res, sk)
+            res = TGSW.CMUX(c_sel, c1, c2)
+            selected = TLWE.dec(res, sk)
 
-        ans = sel*(m2.value - m1.value) + m1.value
-        self.assertEqual(ans, selected.value)
+            ans = sel*(m2.value - m1.value) + m1.value
+            self.assertEqual(ans, selected.value)
+
+        print(f"PASS: {LOOP} {sys._getframe().f_code.co_name}")
+
+    def test_Dec(self):
+        """
+        Plaintext space p must be less than B.
+        """
+        for i in range(LOOP):
+            sk = TLWE.keyGen()
+            m = TGSW.rand_plaintext()
+            c = TGSW.enc(m, sk)
+            mp = TGSW.dec(c, sk)
+            self.assertEqual(m, mp)
 
         print(f"PASS: {LOOP} {sys._getframe().f_code.co_name}")
 
