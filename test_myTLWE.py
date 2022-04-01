@@ -14,7 +14,7 @@ from myTLWE import Torus
 from myTLWE import TLWE
 
 LOOP = 100000
-N = 625
+N = 32
 S = 2**-15
 Q = 6
 P = 11

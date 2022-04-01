@@ -78,7 +78,6 @@ class TGSW:
         list_Ginv = []
         for elem in tlwe.value:
             elem += 2**(Torus.q - TGSW.l*TGSW.Bbit - 1)
-            elem = int(elem)
             for i in range(TGSW.l):
                 ### Unsigned representation
                 list_Ginv.append(elem >> (Torus.q - TGSW.Bbit*(i+1)) & (TGSW.B - 1))
@@ -105,11 +104,8 @@ class TGSW:
     def externalProduct(tlwe: TLWE, tgsw: TGSW) -> TLWE:
         Ginv = TGSW.Ginv(tlwe)
         prod = Ginv @ tgsw.value
-        ### Reduction for fixed-point number
-        list_red = []
-        for elem in prod:
-            list_red.append(elem)
-        return TLWE(list_red)
+
+        return TLWE(prod)
 
     @staticmethod
     def CMUX(sel: TGSW, c0: TLWE, c1: TLWE) -> TLWE:
@@ -162,19 +158,19 @@ def main():
     m1 = TLWE.rand_plaintext()
     m2 = TGSW.rand_plaintext()
     print(f"m1: {m1} ({m1.toInt()})")
-    print(f"m2: {m2} ({m2})")
+    print(f"m2: {m2}")
 
     c1 = TLWE.enc(m1, sk)
     c2 = TGSW.enc(m2, sk)
-    #print(f"c1: {c1}")
-    #print(f"c2: {c2}")
+    print(f"c1: {c1}")
+    print(f"c2: {c2}")
     c3 = TGSW.externalProduct(c1, c2)
-    #print(f"c3: {c3}")
+    print(f"c3: {c3}")
 
     m3 = TLWE.dec(c3, sk)
     print(f"m3: {m3} ({m3.toInt()})")
 
-    if m3 == Torus(m1.value*m2):
+    if m3 == m1*m2:
         print("OK\n")
     else:
         print("NG\n")

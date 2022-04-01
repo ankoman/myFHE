@@ -11,6 +11,7 @@
 #-------------------------------------------------------------------------------
 from __future__ import annotations
 import random
+import math
 import numpy as np
 from myTLWE import TLWE, Torus
 
@@ -33,6 +34,10 @@ class IntRing():
         cls.N = N
 
     def __init__(self, value: List = None) -> IntRing:
+        # list_t = []
+        # for elem in value:
+        #     list_t.append(elem & 2**TRLWE.p - 1)
+        # self.value = np.array(list_t)
         self.value = value
 
     def __add__(self, rhs: IntRing) -> IntRing:
@@ -47,7 +52,13 @@ class IntRing():
         elif type(rhs) == np.ndarray:
             return IntRing(self.value*rhs)
         elif type(rhs) == TorusRing:
-            return TorusRing.ext_product(rhs, self.value)
+            res = TorusRing.ext_product(rhs, self.value)
+           # print(f"{self} * {rhs} = {res}")
+            return res
+        elif type(rhs) == IntRing:
+            res = TorusRing.ext_product(rhs, self.value)
+            #print(f"{self} * {rhs} = {res}")
+            return IntRing(res.value)
         else:
             print(type(rhs))
             raise Exception("IntRing mul type exception")
@@ -139,7 +150,7 @@ class TorusRing:
         return TorusRing(self.value - rhs.value)
 
     def __mul__(self, rhs) -> TorusRing:
-        if type(rhs) == TorusRing:
+        if type(rhs) == IntRing:
             return TorusRing.ext_product(rhs, self.value)
         else:
             print(type(rhs))
@@ -234,6 +245,7 @@ class TRLWE:
     """
 
     N = 0
+    Nbit = 0
     k = 1
     sigma = 0
     p = 0
@@ -244,6 +256,7 @@ class TRLWE:
         TorusRing.init(N)
         IntRing.init(N)
         cls.N = N
+        cls.Nbit = int(math.log2(cls.N))
         cls.sigma = sigma
         cls.p = p
         cls.p_ = 1 / (2**cls.p)
@@ -299,7 +312,6 @@ def main():
 
     N = 16
     S = 2**-25
-    Q = 6
     P = 1
 
     ### Setup
@@ -346,22 +358,22 @@ def main():
         print("NG\n")
 
 
-    # ### Test rotate
-    # from myTRGSW import TRGSW
-    # TRGSW.init(N, S, P, 64, 3)
-    # sk = TRLWE.keyGen()
-    # print(f"sk: {sk}")
-    # tv = TorusRing([i for i in range(TorusRing.N)])
-    # tv = TRLWE.enc(tv, sk, True)
-    # print(f"tv: {tv}")
+    ### Test rotate
+    from myTRGSW import TRGSW
+    TRGSW.init(N, S, P, 64, 3)
+    sk = TRLWE.keyGen()
+    print(f"sk: {sk}")
+    tv = TorusRing([i for i in range(TorusRing.N)])
+    tv = TRLWE.enc(tv, sk, True)
+    print(f"tv: {tv}")
 
-    # X = [0 for i in range(TorusRing.N - 1)]
-    # X.insert(1, 1)
-    # X = IntRing(X)
-    # X = TRGSW.enc(X, sk)
-    # print(f"X: {X}")
+    X = [0 for i in range(TorusRing.N - 1)]
+    X.insert(1, 1)
+    X = IntRing(X)
+    X = TRGSW.enc(X, sk)
+    print(f"X: {X}")
 
-    # print(tv*X**32)
+    print(tv*X**32)
 
 
 

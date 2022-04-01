@@ -10,9 +10,6 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 from __future__ import annotations
-from array import ArrayType
-
-from soupsieve import select
 from myTRLWE import TorusRing, TRLWE, IntRing
 from myTLWE import Torus
 import random
@@ -41,7 +38,28 @@ class TRGSW:
         self.value = value
 
     def __add__(self, x: TRGSW) -> TRGSW:
-        pass
+        raise Exception("Not implemented")
+
+    def __mul__(self, rhs: TRGSW) -> TRGSW:
+        list_Ginv = []
+        for row in rhs.value:
+            ginv = TRGSW.Ginv(TRLWE(row))
+            list_Ginv.append(ginv)
+        
+        Ginv = np.array(list_Ginv)
+        prod = Ginv @ self.value 
+
+        return TRGSW(prod)
+
+    def __pow__(self, rhs: int) -> TRGSW:
+        t = self
+        if type(rhs) == int:
+            for i in range(rhs - 1):
+                t = t*self
+            return t
+        else:
+            print(type(rhs))
+            raise Exception("TRGSW pow type exception")
 
     def __repr__(self) -> str:
         return "TRGSW({})".format(self.value)
@@ -51,7 +69,7 @@ class TRGSW:
 
     @staticmethod
     def rand_element() -> "TRGSW":
-        pass
+        raise Exception("Not implemented")
 
     @staticmethod
     def rand_plaintext() -> IntRing:
@@ -132,11 +150,8 @@ class TRGSW:
     def externalProduct(trlwe: TRLWE, trgsw: TRGSW) -> TRLWE:
         Ginv = TRGSW.Ginv(trlwe)
         prod = Ginv @ trgsw.value   # Prod is TRLWE
-        ### Reduction for fixed-point number
-        list_red = []
-        for elem in prod:
-            list_red.append(elem)
-        return TRLWE(list_red)
+
+        return TRLWE(prod)
 
     @staticmethod
     def CMUX(sel: TRGSW, c0: TRLWE, c1: TRLWE) -> TRLWE:
@@ -185,7 +200,7 @@ def main():
     else:
         print("NG\n")
 
-    ### Homomorphic multiplication test
+    ### External multiplication test
     m1 = TRLWE.rand_plaintext()
     m2 = TRGSW.rand_plaintext()
     print(f"m1: {m1} ({m1.toInt()})")
@@ -231,9 +246,9 @@ def main():
     if sel and selected == m2:
         print("OK")
     elif sel == 0 and selected == m1:
-        print("OK")
+        print("OK\n")
     else:
-        print("NG")
+        print("NG\n")
 
     ### Dec test
     m1 = TRGSW.rand_plaintext()
@@ -245,6 +260,31 @@ def main():
     print(f"m': {mp}")
 
     if mp == m1:
+        print("OK\n")
+    else:
+        print("NG\n")
+
+    ### Internal multiplication test
+    m1 = TRGSW.rand_plaintext()
+    m2 = TRGSW.rand_plaintext()
+    print(f"m1: {m1}")
+    print(f"m2: {m2}")
+
+    c1 = TRGSW.enc(m1, sk)
+    c2 = TRGSW.enc(m2, sk)
+    print(f"c1: {c1}")
+    print(f"c2: {c2}")
+    print(f"m1': {TRGSW.dec(c1, sk)}")
+    print(f"m2': {TRGSW.dec(c2, sk)}")
+
+    c3 = c1*c2
+    print(f"c3: {c3}")
+
+    m3 = TRGSW.dec(c3, sk)
+    print(f"m3: {m3}")
+
+    print(f"ans: {m2*m1}")
+    if m3 == m2*m1:
         print("OK\n")
     else:
         print("NG\n")

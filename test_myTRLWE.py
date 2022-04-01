@@ -15,7 +15,7 @@ from myTRLWE import TorusRing
 from myTRLWE import TRLWE
 
 LOOP = 10000
-N = 128
+N = 32
 S = 2**-25
 P = 1
 

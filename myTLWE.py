@@ -48,17 +48,54 @@ class Torus:
     def __init__(self, value: int = 0) -> None:
         self.value = value & self.mask
 
-    def __add__(self, x: Torus) -> Torus:
-        return Torus(self.value + x.value)
+    def __add__(self, x) -> Torus:
+        if type(x) == int or type(x) == float:
+            return Torus(self.value + x)
+        elif type(x) == Torus:
+            return Torus(self.value + x.value)
+        else:
+            raise Exception("Undefined type")
 
-    def __sub__(self, x: TLWE) -> TLWE:
-        return TLWE(self.value - x.value)
+    def __sub__(self, x: Torus) -> Torus:
+        if type(x) == int or type(x) == float:
+            return Torus(self.value - x)
+        elif type(x) == Torus:
+            return Torus(self.value - x.value)
+        else:
+            raise Exception("Undefined type")
 
-    def __rmul__(self, x: TLWE) -> TLWE:
-        return Torus(self.value * x)
+    def __mul__(self, x) -> TLWE:
+        if type(x) == int or type(x) == float:
+            return Torus(self.value * x)
+        elif type(x) == Torus:
+            return Torus(self.value * x.value)
+        else:
+            raise Exception("Undefined type")
 
-    def __eq__(self, x):
-        return self.value == x.value
+    def __rshift__(self, x: int) -> Torus:
+        if type(x) == int:
+            return Torus(self.value >> x)
+        else:
+            raise Exception("Undefined type")
+
+    def __lshift__(self, x: int) -> Torus:
+        if type(x) == int:
+            return Torus(self.value << x)
+        else:
+            raise Exception("Undefined type")
+
+    def __and__(self, x: int) -> Torus:
+        if type(x) == int:
+            return Torus(self.value & x)
+        else:
+            raise Exception("Undefined type")
+
+    def __eq__(self, x: Torus):
+        if type(x) == Torus:
+            return self.value == x.value
+        else:
+            raise Exception("Undefined type")
+     
     
     def __repr__(self) -> str:
         return "Torus({})".format(self.value)
@@ -67,15 +104,15 @@ class Torus:
         return self.__repr__()
 
     def toInt(self) -> int:
-        return Torus.round(self).value >> (Torus.q - TLWE.p)
+        return (Torus.round(self) >> (Torus.q - TLWE.p)).value
 
     @staticmethod
-    def round(tr: Torus):
+    def round(tr: Torus) -> Torus:
         ## Rounding
-        temp = tr.value + (1 << (Torus.q - TLWE.p - 1))
+        temp = tr + (1 << (Torus.q - TLWE.p - 1))
         temp = temp >> (Torus.q - TLWE.p)
-        temp = int(temp << (Torus.q - TLWE.p))
-        return Torus(temp)
+        temp = temp << (Torus.q - TLWE.p)
+        return temp
 
 class TLWE:
     """
@@ -133,27 +170,27 @@ class TLWE:
     @staticmethod
     def enc(mu: Torus, s_: "binary array") -> TLWE:
         #a_ = np.array([random.randint(0, (2**mu.q) - 1) * mu.q_ for i in range(TLWE.n)])
-        a_ = np.array([random.randint(0, (2**mu.q) - 1) for i in range(TLWE.n)])
+        a_ = np.array([Torus(random.randint(0, (2**mu.q) - 1)) for i in range(TLWE.n)])
         e = round(random.normalvariate(0, TLWE.sigma) * 2**Torus.q)
         b = np.dot(a_, s_) + mu.value + e
         return TLWE(np.array(np.append(a_, b)))
 
     @staticmethod
     def dec(c: TLWE, s_: "binary array") -> Torus:
-        mu = TLWE.dec_wo_round(c, s_).value 
+        mu = TLWE.dec_wo_round(c, s_) 
 
         ### round
         mu = mu + (1 << (Torus.q - TLWE.p - 1))
         mu = mu >> (Torus.q - TLWE.p)
-        mu = int(mu << (Torus.q - TLWE.p))
+        mu = mu << (Torus.q - TLWE.p)
 
-        return Torus(mu)
+        return mu
 
     @staticmethod
     def dec_wo_round(c: TLWE, s_: "binary array") -> Torus:
         mu = c.value[-1] - np.dot(c.value[:TLWE.n], s_)
 
-        return Torus(mu)
+        return mu
 
 def main():
     ### Setup
