@@ -65,10 +65,15 @@ class IntRing():
 
     def __pow__(self, rhs) -> TorusRing:
         t = self
-        if type(rhs) == int:
-            for i in range(rhs - 1):
-                t = TorusRing.ext_product(t, self.value)
-            return t
+        if type(rhs) == int or type(rhs) == np.int64:
+            if rhs == 0:
+                list_t = [0] * (IntRing.N - 1)
+                list_t.insert(0, 1)
+                return IntRing(np.array(list_t))
+            else:
+                for i in range(rhs - 1):
+                    t = TorusRing.ext_product(t, self.value)
+                return IntRing(t.value)
         else:
             print(type(rhs))
             raise Exception("IntRing pow type exception")
@@ -184,6 +189,9 @@ class TorusRing:
     def __eq__(self, x):
         return np.all(self.value == x.value)
 
+    def __iter__(self):
+        return iter(self.value)
+
     def toInt(self) -> "integer array":
         return np.array([elem >> (Torus.q - TRLWE.p) for elem in TorusRing.round(self).value])
 
@@ -223,9 +231,10 @@ class TorusRing:
         """
         ### Mult
         list_X = [0] * (2*len(A))
-        for i, a in enumerate(A.value):
+        for i, a in enumerate(A):
             for j, b in enumerate(B):
-                list_X[i+j] += a*b
+                list_X[i+j] += np.int64((np.uint64(a)*np.uint64(b)) & np.uint64(Torus.mask))
+                #print(f'{a}*{b} = {a*b}')
 
         ### Reduction
         list_C = []
@@ -270,11 +279,17 @@ class TRLWE:
     def __str__(self) -> str:
         return self.__repr__()
 
-    def __add__(self, rhs: TorusRing) -> TRLWE:
+    def __add__(self, rhs: TRLWE) -> TRLWE:
         return TRLWE(self.value + rhs.value)
 
-    def __sub__(self, rhs: TorusRing) -> TRLWE:
+    def __sub__(self, rhs: TRLWE) -> TRLWE:
         return TRLWE(self.value - rhs.value)
+
+    def __mul__(self, rhs: IntRing) -> TRLWE:
+        if type(rhs) == IntRing:
+            return TRLWE(np.array([rhs * elem for elem in self.value]))
+        else:
+            raise Exception("IntRing rshift type exception")
 
     @staticmethod
     def rand_element(self) -> TRLWE:

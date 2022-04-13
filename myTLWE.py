@@ -49,7 +49,7 @@ class Torus:
         self.value = value & self.mask
 
     def __add__(self, x) -> Torus:
-        if type(x) == int or type(x) == float:
+        if type(x) == int or type(x) == float or type(x) == np.int64:
             return Torus(self.value + x)
         elif type(x) == Torus:
             return Torus(self.value + x.value)
@@ -65,8 +65,9 @@ class Torus:
             raise Exception("Undefined type")
 
     def __mul__(self, x) -> TLWE:
-        if type(x) == int or type(x) == float:
-            return Torus(self.value * x)
+        if type(x) == int or type(x) == float or type(x) == np.int64:
+            #print(f'{self.value}*{x}')
+            return Torus(np.int64((np.uint64(self.value) * np.uint64(x)) & np.uint64(self.mask)))
         elif type(x) == Torus:
             return Torus(self.value * x.value)
         else:
@@ -144,6 +145,15 @@ class TLWE:
     def __sub__(self, x: TLWE) -> TLWE:
         return TLWE(self.value - x.value)
 
+    def __rsub__(self, x: TLWE) -> TLWE:
+        return TLWE(self.value - x.value)
+
+    def __mul__(self, rhs: int) -> TLWE:
+        if type(rhs) == int or type(rhs) == np.int64:
+            return TLWE(np.array([elem * rhs for elem in self.value]))
+        else:
+            raise Exception("IntRing rshift type exception")
+
     def __repr__(self) -> str:
         return "TLWE({})".format(self.value)
 
@@ -170,7 +180,7 @@ class TLWE:
     @staticmethod
     def enc(mu: Torus, s_: "binary array") -> TLWE:
         #a_ = np.array([random.randint(0, (2**mu.q) - 1) * mu.q_ for i in range(TLWE.n)])
-        a_ = np.array([Torus(random.randint(0, (2**mu.q) - 1)) for i in range(TLWE.n)])
+        a_ = np.array([Torus(random.randint(0, (2**Torus.q) - 1)) for i in range(TLWE.n)])
         e = round(random.normalvariate(0, TLWE.sigma) * 2**Torus.q)
         b = np.dot(a_, s_) + mu.value + e
         return TLWE(np.array(np.append(a_, b)))
@@ -188,7 +198,7 @@ class TLWE:
 
     @staticmethod
     def dec_wo_round(c: TLWE, s_: "binary array") -> Torus:
-        mu = c.value[-1] - np.dot(c.value[:TLWE.n], s_)
+        mu = c.value[-1] - np.dot(c.value[:-1], s_)
 
         return mu
 
